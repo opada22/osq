@@ -1,0 +1,147 @@
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+    question = request.content.question;
+    answer = request.content.answer;
+    if (request.content.command == "add") {
+
+        console.log(add(question,answer))
+        //alert("Q IS: " + question + "     " + "A IS: " +  answer)
+
+    } else if (request.content.command == "search") {
+
+        sendResponse({answers: search(question)})
+        // alert(search(question))
+
+    }
+})
+
+function add(question,answer) {
+    theUrl = "https://bbmcq.herokuapp.com/add?"
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.open( "GET", theUrl + "q=" + question + "&a=" + answer , false ); // false for synchronous request
+    xmlHttp.send( null );
+    if (xmlHttp.responseText == "OK") {
+        return "i saved your answer :)"
+    } else {
+        return xmlHttp.responseText
+    }
+    
+}
+
+function search(question) {
+    theUrl = "https://bbmcq.herokuapp.com/search?"
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.open( "GET", theUrl + "q=" + question , false ); // false for synchronous request
+    xmlHttp.send( null );
+    return xmlHttp.responseText;
+}
+choices = document.getElementsByClassName("multiple-choice-question"); // Getting all choices inputs
+question = document.getElementsByClassName("vtbegenerated")[0].innerText; // Question Value
+labels = document.getElementsByTagName("label");
+answersValue = []; // Record Value of Choices
+
+// Filtering and get radio input
+
+for(i = 0; i < choices.length; i++) {
+    if(choices[i].type != "radio") {
+        choices.slice(i)
+    }
+}
+
+// Sending Message to Back-end to get the % of answers
+chrome.runtime.sendMessage({
+    content: {
+        command: "search",
+        question: question
+    }
+}, function(response) {
+        edit(response.answers)
+    })
+
+
+
+// Function the add the % to the document
+function edit(answers) {
+    answers = JSON.parse(answers);
+    for (let i = 0; i < answersValue.length; i++) {
+
+        // Answers Will be like :-
+        // ansewrs = {
+        // [THE_CHOICE_VALUE]: [THE PERCENT]
+        // }
+
+        key = answersValue[i];
+        value = answers[answersValue[i]];
+
+        console.log('%c' + key + " : " + value,'background: #222; color: #bada55') // Sending the answers to the console for debugging
+
+        // Adding the % under the answer, if [CHOICE_VALUE_IN_FRONT_END] = [CHOICE_VALUE_IN_BACK_END] 
+        for (let i = 0; i < labels.length; i++) {
+            const e = labels[i];
+            if (e.innerText == key) {
+                var node = document.createElement("p");                 
+                var textnode = document.createTextNode(value);         
+                node.appendChild(textnode);
+                node.setAttribute("style","direction:ltr;")
+                e.parentNode.appendChild(node);   
+            }
+        }
+
+    }
+}
+    for (i = 0; i < choices.length; i++) {
+
+        answersValue.push(choices[i].parentNode.parentNode.childNodes[5].innerText) // Push [CHOICE_VALUE] 
+
+        // Add Click Listener for Every Radio Input
+        choices[i].addEventListener('click', function(e) {
+            answer = e.target.parentNode.parentNode.getElementsByTagName("p")[0].innerText // Getting [CHOICE_VALUE] to send it to the back-end
+            chrome.runtime.sendMessage({
+                content: {
+                    command: "add",
+                    question: question,
+                    answer: answer
+                }
+              })
+        })
+
+    }
+
+
+
+{
+    "name": "Bear",
+    "version": "0.1",
+    "manifest_version": 2,
+    "content_scripts": [
+      {
+        "matches": ["<all_urls>"],
+        "js": ["content.js"]
+      }
+    ],
+    "browser_action": {
+      "default_title": "Bear",
+      "default_popup": "popup.html"
+    },
+    "background": {
+      "scripts": ["background.js"]
+    },
+    "permissions": ["tabs"],
+    "icons": { "16": "icon16.png",
+        "48": "icon48.png",
+       "128": "icon128.png" }
+  }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bear</title>
+</head>
+<body style="width: 200px;">
+  <script src="popup.js" charset="utf-8"></script>
+  Alpha version .
+  <br> 
+  Telegram : WhoTheFuckLam | Fi
+  <br>
+  made with ❤️ .
+</body>
+</html>
